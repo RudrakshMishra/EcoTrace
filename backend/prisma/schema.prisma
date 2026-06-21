@@ -1,0 +1,170 @@
+datasource db {
+  provider = "sqlite"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id            String          @id @default(uuid())
+  name          String
+  email         String          @unique
+  passwordHash  String
+  avatar        String?
+  country       String?
+  timezone      String?
+  emailVerified Boolean         @default(false)
+  provider      String          @default("credentials")
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  preferences   UserPreference?
+  carbonProfile CarbonProfile?
+  logs          DailyLog[]
+  streak        Streak?
+  goals         Goal[]
+  badges        UserBadge[]
+  insights      Insight[]
+  refreshTokens RefreshToken[]
+  uploads            Upload[]
+  notifications      Notification[]
+  activityLogs       ActivityLog[]
+  leaderboardEntries LeaderboardEntry[]
+}
+
+model UserPreference {
+  id                  String  @id @default(uuid())
+  userId              String  @unique
+  theme               String  @default("dark")
+  notificationEnabled Boolean @default(true)
+  publicProfile       Boolean @default(true)
+  measurementSystem   String  @default("metric")
+  user                User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model CarbonProfile {
+  id               String   @id @default(uuid())
+  userId           String   @unique
+  transportScore   Float    @default(0)
+  dietScore        Float    @default(0)
+  homeScore        Float    @default(0)
+  flightScore      Float    @default(0)
+  shoppingScore    Float    @default(0)
+  annualTotal      Float    @default(0)
+  globalPercentile Float    @default(50)
+  updatedAt        DateTime @updatedAt
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model DailyLog {
+  id         String   @id @default(uuid())
+  userId     String
+  actionType String
+  category   String
+  co2Delta   Float
+  loggedAt   DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Streak {
+  id            String  @id @default(uuid())
+  userId        String  @unique
+  currentStreak Int     @default(0)
+  bestStreak    Int     @default(0)
+  lastLoggedDay String? // format: YYYY-MM-DD
+  user          User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Goal {
+  id              String   @id @default(uuid())
+  userId          String
+  targetReduction Float
+  currentProgress Float    @default(0)
+  deadline        DateTime
+  status          String   @default("active") // "active", "achieved", "failed"
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Badge {
+  id          String      @id @default(uuid())
+  title       String      @unique
+  description String
+  icon        String
+  condition   String
+  userBadges  UserBadge[]
+}
+
+model UserBadge {
+  id       String   @id @default(uuid())
+  userId   String
+  badgeId  String
+  earnedAt DateTime @default(now())
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge    Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeId])
+}
+
+model Insight {
+  id         String @id @default(uuid())
+  userId     String
+  title      String
+  description String
+  co2Savings Float
+  status     String @default("TODO") // "TODO", "IN_PROGRESS", "DONE"
+  user       User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  type      String
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ActivityLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  ipAddress String?
+  device    String?
+  browser   String?
+  location  String?
+  event     String
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  revoked   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Upload {
+  id        String   @id @default(uuid())
+  userId    String
+  fileUrl   String
+  type      String
+  size      Int
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model LeaderboardEntry {
+  id         String   @id @default(uuid())
+  userId     String
+  greenScore Float    @default(0)
+  rank       Int      @default(0)
+  week       String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, week])
+}
